@@ -43,29 +43,6 @@ public final class EmployeeService {
         return employees;
     }
 
-    public Employee updateEmployee(long id, String chineseName, String englishName, LocalDate hireDate) {
-        Employee existing = getEmployee(id);
-        requireNonBlank(chineseName, "Chinese name is required");
-        requireNonBlank(englishName, "English name is required");
-        Objects.requireNonNull(hireDate, "hireDate");
-        List<Map<String, String>> conflicts = database.query(
-                "SELECT id FROM employee WHERE LOWER(english_name)='" +
-                        Database.escape(englishName.toLowerCase()) + "' AND id<>" + id + ";");
-        if (!conflicts.isEmpty()) {
-            throw new IllegalArgumentException("English name already exists");
-        }
-        String sql = String.format(
-                "UPDATE employee SET chinese_name='%s', english_name='%s', hire_date='%s' WHERE id=%d;",
-                Database.escape(chineseName), Database.escape(englishName), hireDate, id);
-        database.execute(sql);
-        return new Employee(existing.id(), chineseName, englishName, hireDate);
-    }
-
-    public void deleteEmployee(long id) {
-        getEmployee(id);
-        database.execute("DELETE FROM employee WHERE id=" + id + ";");
-    }
-
     public Employee getEmployee(long id) {
         List<Map<String, String>> rows = database.query(
                 "SELECT id, chinese_name, english_name, hire_date FROM employee WHERE id=" + id + ";");

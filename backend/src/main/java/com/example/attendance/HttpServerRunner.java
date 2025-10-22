@@ -75,25 +75,6 @@ public final class HttpServerRunner {
                     "hireDate", employee.hireDate().toString()
             );
         }));
-        list.add(new Route("PUT", "/api/employees/{id}", true, "ADMIN", (body, params, query, user) -> {
-            long id = Long.parseLong(params.get("id"));
-            String chineseName = body.getOrDefault("chineseName", "").toString();
-            String englishName = body.getOrDefault("englishName", "").toString();
-            String hireDate = body.getOrDefault("hireDate", "").toString();
-            EmployeeService.Employee employee = employeeService
-                    .updateEmployee(id, chineseName, englishName, LocalDate.parse(hireDate));
-            return Map.of(
-                    "id", employee.id(),
-                    "chineseName", employee.chineseName(),
-                    "englishName", employee.englishName(),
-                    "hireDate", employee.hireDate().toString()
-            );
-        }));
-        list.add(new Route("DELETE", "/api/employees/{id}", true, "ADMIN", (body, params, query, user) -> {
-            long id = Long.parseLong(params.get("id"));
-            employeeService.deleteEmployee(id);
-            return Map.of("status", "deleted");
-        }));
         list.add(new Route("GET", "/api/employees/{id}/annual-leave", true, null, (body, params, query, user) -> {
             long id = Long.parseLong(params.get("id"));
             EmployeeService.AnnualLeaveSummary summary = employeeService.calculateAnnualLeave(id);
@@ -122,11 +103,6 @@ public final class HttpServerRunner {
                     "size", result.size(),
                     "totalElements", result.total()
             );
-        }));
-        list.add(new Route("DELETE", "/api/leave-requests/{id}", true, "ADMIN", (body, params, query, user) -> {
-            long id = Long.parseLong(params.get("id"));
-            leaveService.deleteLeaveRequest(id);
-            return Map.of("status", "deleted");
         }));
         return List.copyOf(list);
     }
