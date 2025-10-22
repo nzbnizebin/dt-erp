@@ -27,7 +27,13 @@ public final class LeaveRequestService {
         if (hours < 1.0) {
             throw new IllegalArgumentException("Minimum leave duration is 1 hour");
         }
-        if (!isWholeHour(hours)) {
+        if (Math.abs(hours * 1000 - Math.round(hours * 1000)) > 0.0001) {
+            throw new IllegalArgumentException("Hours must be a numeric value");
+        }
+        if (Math.abs(hours * 10 - Math.round(hours * 10)) > 0.0001) {
+            throw new IllegalArgumentException("Hours must be specified in 0.1 hour increments");
+        }
+        if (hours % 1.0 != 0) {
             throw new IllegalArgumentException("Hours must be in whole hours");
         }
         if (end.isBefore(start)) {
@@ -93,7 +99,7 @@ public final class LeaveRequestService {
             item.put("createdAt", row.get("created_at"));
             items.add(item);
         }
-        long total = Long.parseLong(database.query(countSql).get(0).getOrDefault("total", "0"));
+        long total = rows.isEmpty() ? 0 : Long.parseLong(database.query(countSql).get(0).get("total"));
         return new PagedResult(items, page, size, total);
     }
 
@@ -119,10 +125,6 @@ public final class LeaveRequestService {
                 // no-op for other leave types
             }
         }
-    }
-
-    private static boolean isWholeHour(double value) {
-        return Math.abs(value - Math.rint(value)) < 1e-6;
     }
 
     private static String asString(Object value) {

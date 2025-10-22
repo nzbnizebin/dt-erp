@@ -4,23 +4,28 @@ set -euo pipefail
 ROOT_DIR=$(cd "$(dirname "$0")" && pwd)
 BACKEND_DIR="$ROOT_DIR/backend"
 FRONTEND_DIR="$ROOT_DIR/frontend"
-DATA_DIR="$ROOT_DIR/data"
 
-if ! command -v javac >/dev/null 2>&1; then
-  echo "OpenJDK 17 javac is required but not found" >&2
+if ! command -v mvn >/dev/null 2>&1; then
+  echo "Apache Maven is required but not found in PATH" >&2
   exit 1
 fi
 
-mkdir -p "$DATA_DIR"
+if ! command -v npm >/dev/null 2>&1; then
+  echo "Node.js (npm) is required but not found in PATH" >&2
+  exit 1
+fi
 
-echo "Building backend..."
-"$BACKEND_DIR/build.sh"
+cd "$BACKEND_DIR"
+if [ ! -d "$ROOT_DIR/data" ]; then
+  mkdir -p "$ROOT_DIR/data"
+fi
+
+echo "Installing backend dependencies..."
+mvn -q dependency:go-offline
 
 echo "Starting backend..."
-java -jar "$BACKEND_DIR/target/attendance-backend.jar" &
+mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=default" &
 BACKEND_PID=$!
-
-echo "Backend started with PID $BACKEND_PID"
 
 cleanup() {
   echo "Stopping backend (PID $BACKEND_PID)..."
@@ -29,17 +34,9 @@ cleanup() {
 
 trap cleanup EXIT
 
-if command -v npm >/dev/null 2>&1; then
-  cd "$FRONTEND_DIR"
-  if [ -f package.json ]; then
-    if [ ! -d node_modules ]; then
-      echo "Installing frontend dependencies..."
-      npm install
-    fi
-    echo "Starting frontend dev server..."
-    npm run dev -- --host
-  fi
-else
-  echo "npm not found; frontend server not started" >&2
-  wait "$BACKEND_PID"
-fi
+cd "$FRONTEND_DIR"
+echo "Installing frontend dependencies..."
+npm install
+
+echo "Starting frontend dev server..."
+npm run dev -- --host
